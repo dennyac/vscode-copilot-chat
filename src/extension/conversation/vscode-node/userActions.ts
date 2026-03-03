@@ -278,6 +278,7 @@ export class UserFeedbackService implements IUserFeedbackService {
 					participant: agentId,
 					languageId: e.action.languageId ?? '',
 					modelId: e.action.modelId ?? '',
+					resolvedModelId: result.metadata?.resolvedModel ?? '',
 					comp_type: compType,
 					mode: participantIdToModeName(agentId),
 				},
@@ -303,6 +304,7 @@ export class UserFeedbackService implements IUserFeedbackService {
 				participant: agentId,
 				languageId: e.languageId ?? '',
 				modelId: e.modelId,
+				resolvedModelId: result.metadata?.resolvedModel ?? '',
 				mode: participantIdToModeName(agentId),
 			},
 			{
