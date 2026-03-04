@@ -75,69 +75,30 @@ describe('resolvedModel in result metadata', () => {
 });
 
 /**
- * Verifies that the resolvedModelId property is correctly included in
- * the telemetry properties for copy/insert/apply user actions.
+ * Verifies that modelId uses resolvedModel only when auto is selected,
+ * and preserves the original modelId for all other model selections.
  */
-describe('resolvedModelId in user action telemetry properties', () => {
-	function buildCopyInsertProperties(metadata: Partial<IResultMetadata> | undefined) {
-		return {
-			codeBlockIndex: '0',
-			messageId: metadata?.modelMessageId ?? '',
-			headerRequestId: metadata?.responseId ?? '',
-			participant: 'test-agent',
-			languageId: 'typescript',
-			modelId: 'copilot-auto',
-			resolvedModelId: metadata?.resolvedModel ?? '',
-			comp_type: 'full' as const,
-			mode: 'ask',
-		};
+describe('modelId uses resolvedModel only for auto selection', () => {
+	function resolveModelId(metadata: Partial<IResultMetadata> | undefined, actionModelId: string) {
+		return actionModelId === 'auto' ? (metadata?.resolvedModel || 'auto') : actionModelId;
 	}
 
-	function buildApplyProperties(metadata: Partial<IResultMetadata> | undefined) {
-		return {
-			codeBlockIndex: '0',
-			messageId: metadata?.modelMessageId ?? '',
-			headerRequestId: metadata?.responseId ?? '',
-			participant: 'test-agent',
-			languageId: 'typescript',
-			modelId: 'copilot-auto',
-			resolvedModelId: metadata?.resolvedModel ?? '',
-			mode: 'ask',
-		};
-	}
-
-	test('includes resolvedModelId when metadata has resolvedModel', () => {
-		const metadata: Partial<IResultMetadata> = {
-			modelMessageId: 'msg-1',
-			responseId: 'resp-1',
-			resolvedModel: 'gpt-4o',
-		};
-
-		const copyProps = buildCopyInsertProperties(metadata);
-		expect(copyProps.resolvedModelId).toBe('gpt-4o');
-
-		const applyProps = buildApplyProperties(metadata);
-		expect(applyProps.resolvedModelId).toBe('gpt-4o');
+	test('uses resolvedModel when auto is selected and resolvedModel is available', () => {
+		const metadata: Partial<IResultMetadata> = { resolvedModel: 'gpt-4o' };
+		expect(resolveModelId(metadata, 'auto')).toBe('gpt-4o');
 	});
 
-	test('defaults resolvedModelId to empty string when metadata is undefined', () => {
-		const copyProps = buildCopyInsertProperties(undefined);
-		expect(copyProps.resolvedModelId).toBe('');
-
-		const applyProps = buildApplyProperties(undefined);
-		expect(applyProps.resolvedModelId).toBe('');
+	test('falls back to auto when auto is selected but resolvedModel is missing', () => {
+		expect(resolveModelId(undefined, 'auto')).toBe('auto');
+		expect(resolveModelId({}, 'auto')).toBe('auto');
 	});
 
-	test('defaults resolvedModelId to empty string when resolvedModel is missing', () => {
-		const metadata: Partial<IResultMetadata> = {
-			modelMessageId: 'msg-1',
-			responseId: 'resp-1',
-		};
+	test('keeps original modelId when non-auto model is selected', () => {
+		const metadata: Partial<IResultMetadata> = { resolvedModel: 'gpt-4o-2024-05-13' };
+		expect(resolveModelId(metadata, 'gpt-4o')).toBe('gpt-4o');
+	});
 
-		const copyProps = buildCopyInsertProperties(metadata);
-		expect(copyProps.resolvedModelId).toBe('');
-
-		const applyProps = buildApplyProperties(metadata);
-		expect(applyProps.resolvedModelId).toBe('');
+	test('keeps original modelId when non-auto model is selected and no metadata', () => {
+		expect(resolveModelId(undefined, 'claude-sonnet-4')).toBe('claude-sonnet-4');
 	});
 });
